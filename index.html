@@ -10,6 +10,7 @@
             display: block;
             margin: 20px auto;
             background-color: white;
+            max-width: 100%;
         }
         body {
             display: flex;
@@ -20,6 +21,7 @@
             margin: 0;
             background-color: #333;
             font-family: Arial, sans-serif;
+            touch-action: none;
         }
         #restartButton {
             display: none;
@@ -36,11 +38,48 @@
         #restartButton:hover {
             background-color: #45a049;
         }
+        #mobileControls {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 20px;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .control-btn:active {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        @media (max-width: 768px) {
+            #mobileControls {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
     <button id="restartButton">Play Again</button>
+    <div id="mobileControls">
+        <div class="control-btn" id="leftBtn">←</div>
+        <div class="control-btn" id="rightBtn">→</div>
+    </div>
 
     <script>
         // Wait for the DOM to load
@@ -49,13 +88,15 @@
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
 
-            // Get restart button
+            // Get control elements
             const restartButton = document.getElementById('restartButton');
+            const leftBtn = document.getElementById('leftBtn');
+            const rightBtn = document.getElementById('rightBtn');
 
             // Player properties
             const player = {
-                x: canvas.width / 2 - 25, // Center the player
-                y: canvas.height - 50,    // Position from bottom
+                x: canvas.width / 2 - 25,
+                y: canvas.height - 50,
                 width: 50,
                 height: 30,
                 speed: 5,
@@ -67,16 +108,75 @@
             let isGameOver = false;
             let score = 0;
             let animationId;
+            let isMovingLeft = false;
+            let isMovingRight = false;
 
-            // Event listeners for keyboard
+            // Keyboard controls
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'ArrowLeft' && player.x > 0) {
+                if (e.key === 'ArrowLeft') isMovingLeft = true;
+                if (e.key === 'ArrowRight') isMovingRight = true;
+            });
+
+            document.addEventListener('keyup', function(e) {
+                if (e.key === 'ArrowLeft') isMovingLeft = false;
+                if (e.key === 'ArrowRight') isMovingRight = false;
+            });
+
+            // Touch controls
+            leftBtn.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                isMovingLeft = true;
+            });
+
+            leftBtn.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                isMovingLeft = false;
+            });
+
+            rightBtn.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                isMovingRight = true;
+            });
+
+            rightBtn.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                isMovingRight = false;
+            });
+
+            // Mouse controls for buttons (for testing on desktop)
+            leftBtn.addEventListener('mousedown', function() {
+                isMovingLeft = true;
+            });
+
+            leftBtn.addEventListener('mouseup', function() {
+                isMovingLeft = false;
+            });
+
+            leftBtn.addEventListener('mouseleave', function() {
+                isMovingLeft = false;
+            });
+
+            rightBtn.addEventListener('mousedown', function() {
+                isMovingRight = true;
+            });
+
+            rightBtn.addEventListener('mouseup', function() {
+                isMovingRight = false;
+            });
+
+            rightBtn.addEventListener('mouseleave', function() {
+                isMovingRight = false;
+            });
+
+            // Update player position
+            function updatePlayer() {
+                if (isMovingLeft && player.x > 0) {
                     player.x -= player.speed;
                 }
-                if (e.key === 'ArrowRight' && player.x < canvas.width - player.width) {
+                if (isMovingRight && player.x < canvas.width - player.width) {
                     player.x += player.speed;
                 }
-            });
+            }
 
             // Create falling object
             function createObject() {
@@ -148,6 +248,7 @@
             // Game loop
             function gameLoop() {
                 if (!isGameOver) {
+                    updatePlayer();
                     updateObjects();
                     
                     // Create new objects
@@ -165,8 +266,10 @@
                 isGameOver = false;
                 score = 0;
                 objects = [];
-                player.x = canvas.width / 2 - 25; // Center the player
+                player.x = canvas.width / 2 - 25;
                 restartButton.style.display = 'none';
+                isMovingLeft = false;
+                isMovingRight = false;
                 
                 if (animationId) {
                     cancelAnimationFrame(animationId);
